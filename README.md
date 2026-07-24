@@ -54,7 +54,7 @@ paths ending in `z`, so its edge may intercept `/healthz` before FastAPI.
 | `ENABLE_LIVE` | `false` | Stage kill-switch for the optional Gemini Live API. |
 | `GOOGLE_API_KEY` | empty | Gemini Developer API key, if not using Vertex AI credentials. |
 | `GOOGLE_CLOUD_PROJECT` | empty | Google Cloud project for deploy, Vertex AI, and Firestore. |
-| `GOOGLE_CLOUD_LOCATION` | `us-central1` | Vertex AI location. |
+| `GOOGLE_CLOUD_LOCATION` | `global` | Vertex AI model endpoint. |
 | `MODEL_EXPLAIN` | `gemini-3-flash-preview` | Primary multimodal explanation model. |
 | `MODEL_EXPLAIN_FALLBACK` | `gemini-3.5-flash-lite` | Explanation fallback model. |
 | `MODEL_TTS` | `gemini-3.1-flash-tts-preview` | Speech synthesis model. |

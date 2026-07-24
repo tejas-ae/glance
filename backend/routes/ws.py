@@ -1,6 +1,7 @@
 """Room-scoped WebSocket gateway."""
 
 import asyncio
+import logging
 import os
 from datetime import UTC, datetime
 from typing import Any
@@ -16,10 +17,11 @@ from models.schemas import (
     JoinMessage,
     PingMessage,
 )
-from services.explain import stream_mock_explanation
+from services.explain import stream_explanation
 
 router = APIRouter()
 client_message_adapter = TypeAdapter(ClientMessage)
+logger = logging.getLogger(__name__)
 
 
 @router.websocket("/ws")
@@ -32,6 +34,25 @@ async def websocket_gateway(websocket: WebSocket) -> None:
     async def send_json(payload: dict[str, Any]) -> None:
         async with send_lock:
             await websocket.send_json(payload)
+
+    async def run_explanation(message: ExplainRequestMessage) -> None:
+        try:
+            await stream_explanation(
+                message,
+                send_json,
+                mock_mode=env_flag("MOCK_MODE", True),
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Explanation request failed")
+            await send_error(
+                send_json,
+                message.request_id,
+                "EXPLAIN_FAILED",
+                "The explanation service failed. Please try again.",
+                True,
+            )
 
     try:
         while True:
@@ -90,15 +111,6 @@ async def websocket_gateway(websocket: WebSocket) -> None:
                 continue
 
             if isinstance(message, ExplainRequestMessage):
-                if not env_flag("MOCK_MODE", True):
-                    await send_error(
-                        send_json,
-                        message.request_id,
-                        "MODEL_NOT_ENABLED",
-                        "Real model explanation is not enabled.",
-                        False,
-                    )
-                    continue
                 if active_explanation:
                     active_explanation.cancel()
                 ack = AckMessage(
@@ -109,9 +121,7 @@ async def websocket_gateway(websocket: WebSocket) -> None:
                     server_time=datetime.now(UTC).isoformat(),
                 )
                 await send_json(ack.model_dump())
-                active_explanation = asyncio.create_task(
-                    stream_mock_explanation(message.request_id, send_json)
-                )
+                active_explanation = asyncio.create_task(run_explanation(message))
                 continue
 
             await send_error(
