@@ -27,7 +27,7 @@ gcloud run deploy "${BACKEND}" \
   --source="${ROOT_DIR}/backend" \
   --build-service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_EMAIL}" \
   --service-account="${RUNTIME_EMAIL}" \
-  --allow-unauthenticated \
+  --no-invoker-iam-check \
   --min-instances=1 \
   --max-instances=1 \
   --session-affinity \
@@ -46,7 +46,7 @@ gcloud run deploy "${FRONTEND}" \
   --source="${ROOT_DIR}/frontend" \
   --build-service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_EMAIL}" \
   --service-account="${RUNTIME_EMAIL}" \
-  --allow-unauthenticated \
+  --no-invoker-iam-check \
   --min-instances=1 \
   --max-instances=1 \
   --session-affinity \

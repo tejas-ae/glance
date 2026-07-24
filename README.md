@@ -43,6 +43,9 @@ Run command 4 in terminal one and command 5 in terminal two. On Linux, replace
 the final `open` with `xdg-open`. The API health check is at
 `http://localhost:8000/healthz`.
 
+Use `/health` when checking a Cloud Run deployment. Cloud Run reserves some
+paths ending in `z`, so its edge may intercept `/healthz` before FastAPI.
+
 ## Environment
 
 | Variable | Default | Description |
