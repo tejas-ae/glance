@@ -1,6 +1,11 @@
 "use client";
 
-import { useState, type PointerEvent, type RefObject } from "react";
+import {
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type RefObject,
+} from "react";
 
 import type { BBox } from "@/lib/types";
 
@@ -10,6 +15,7 @@ type ScreenShareProps = {
   aspectRatio: number;
   bbox: BBox | null;
   showBbox: boolean;
+  focused: boolean;
   onVideoReady: () => void;
   onSelection: (bbox: BBox) => void;
 };
@@ -22,6 +28,7 @@ export default function ScreenShare({
   aspectRatio,
   bbox,
   showBbox,
+  focused,
   onVideoReady,
   onSelection,
 }: ScreenShareProps) {
@@ -61,8 +68,12 @@ export default function ScreenShare({
 
   return (
     <div
-      className={`screen-stage ${active ? "is-selectable" : ""}`}
-      style={{ aspectRatio }}
+      className={`screen-stage ${active ? "is-selectable" : ""} ${focused ? "is-focused" : ""}`}
+      style={{
+        aspectRatio,
+        "--focus-x": `${((bbox?.x ?? 0.5) + (bbox?.width ?? 0) / 2) * 100}%`,
+        "--focus-y": `${((bbox?.y ?? 0.5) + (bbox?.height ?? 0) / 2) * 100}%`,
+      } as CSSProperties}
       onPointerDown={beginSelection}
       onPointerMove={moveSelection}
       onPointerUp={endSelection}

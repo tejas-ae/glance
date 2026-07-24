@@ -1,0 +1,77 @@
+.explain-pane { gap: 12px; }
+.explain-panel { min-height: 0; overflow: auto; }
+.explain-badge-loading,
+.explain-badge-streaming { background: #fff0eb; color: #bf4a38; }
+.explain-badge-done { background: #e9f7ef; color: #1d6b4c; }
+.explain-badge-error { background: #fff0ed; color: #9b3f35; }
+
+.explain-loading { padding-top: 38px; }
+.explain-loading i {
+  display: block;
+  height: 13px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #edf1ed 25%, #dce5df 50%, #edf1ed 75%);
+  background-size: 200% 100%;
+  animation: explain-shimmer 1.1s linear infinite;
+}
+.explain-loading i:nth-child(1) { width: 92%; }
+.explain-loading i:nth-child(2) { width: 76%; }
+.explain-loading i:nth-child(3) { width: 55%; }
+.explain-loading p { margin-top: 25px; color: #75837e; font-size: 12px; }
+
+.explain-result > p {
+  margin: 30px 0 22px;
+  color: #20302b;
+  font-size: 16px;
+  font-weight: 560;
+  line-height: 1.72;
+}
+.stream-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -.12em;
+  background: #ff6b52;
+  animation: caret-blink .65s steps(1) infinite;
+}
+.explain-result blockquote {
+  margin: 0;
+  border-left: 3px solid #ff6b52;
+  border-radius: 0 12px 12px 0;
+  background: #fff4f0;
+  padding: 13px 15px;
+  color: #5e4038;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.explain-result blockquote span,
+.explain-result blockquote small { display: block; }
+.explain-result blockquote span {
+  margin-bottom: 6px;
+  color: #c05846;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.explain-result blockquote small { margin-top: 7px; color: #90756d; }
+
+.explain-error {
+  margin-top: 30px;
+  border-radius: 13px;
+  background: #fff0ed;
+  padding: 16px;
+  color: #8f3c32;
+}
+.explain-error p { margin: 8px 0; font-size: 12px; line-height: 1.5; }
+.explain-error small { color: #a8665e; }
+.explain-pane .latency-hud { margin-top: auto; }
+
+@keyframes explain-shimmer {
+  to { background-position: -200% 0; }
+}
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}

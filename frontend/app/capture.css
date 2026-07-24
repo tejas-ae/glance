@@ -28,10 +28,17 @@
   height: 100%;
   object-fit: fill;
   pointer-events: none;
+  transform: scale(1);
+  transform-origin: var(--focus-x, 50%) var(--focus-y, 50%);
+  transition: transform .45s cubic-bezier(.2,.75,.2,1), filter .45s ease;
 }
 
 .screen-stage.is-selectable { cursor: crosshair; }
 .screen-stage.is-selectable video { display: block; }
+.screen-stage.is-focused video { filter: saturate(1.12) brightness(.88); transform: scale(1.1); }
+.screen-stage.is-focused .selection-box {
+  animation: selection-pulse .9s ease-in-out infinite alternate;
+}
 
 .selection-hint {
   position: absolute;
@@ -101,3 +108,8 @@
   object-fit: contain;
 }
 .capture-preview > div span { color: #93a09b; font-size: 10px; }
+
+@keyframes selection-pulse {
+  from { border-color: #ff3b30; box-shadow: 0 0 0 5px rgba(255,255,255,.35); }
+  to { border-color: #ff8a78; box-shadow: 0 0 0 9px rgba(255,107,82,.25); }
+}

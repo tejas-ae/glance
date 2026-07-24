@@ -6,7 +6,8 @@ import AudioRing from "./AudioRing";
 import ScreenShare from "./ScreenShare";
 import TapOverlay from "./TapOverlay";
 import { captureSelection, type CaptureImages } from "@/lib/capture";
-import { downloadPcmAsWav, PCM_SAMPLE_RATE_HZ, PcmRingBuffer } from "@/lib/pcm";
+import { connectMicrophone } from "@/lib/microphone";
+import { downloadPcmAsWav, pcmToBase64, PcmRingBuffer } from "@/lib/pcm";
 import type { BBox } from "@/lib/types";
 
 const configuredWindow = Number(process.env.NEXT_PUBLIC_AUDIO_WINDOW_S ?? 60);
@@ -18,7 +19,22 @@ type CaptureResources = {
   context: AudioContext | null;
 };
 
-export default function CaptureWorkspace() {
+export type PreparedCapture = {
+  bbox: BBox;
+  annotatedFrame: string;
+  crop: string;
+  audioPcm16: string;
+};
+
+type CaptureWorkspaceProps = {
+  explainStatus: "idle" | "loading" | "streaming" | "done" | "error";
+  onCapture: (capture: PreparedCapture, captureMs: number) => void;
+};
+
+export default function CaptureWorkspace({
+  explainStatus,
+  onCapture,
+}: CaptureWorkspaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const resources = useRef<CaptureResources>({
     display: null,
@@ -74,25 +90,10 @@ export default function CaptureWorkspace() {
       setActive(true);
 
       try {
-        const microphone = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            channelCount: 1,
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
+        const microphone = await connectMicrophone(context, (chunk) => {
+          ring.current.push(chunk);
         });
         resources.current.microphone = microphone;
-        await context.audioWorklet.addModule("/worklets/recorder.js");
-        const source = context.createMediaStreamSource(microphone);
-        const recorder = new AudioWorkletNode(context, "pcm-recorder", {
-          processorOptions: { targetSampleRate: PCM_SAMPLE_RATE_HZ },
-        });
-        const silentOutput = context.createGain();
-        silentOutput.gain.value = 0;
-        recorder.port.onmessage = (event: MessageEvent<Int16Array>) => {
-          ring.current.push(event.data);
-        };
-        source.connect(recorder).connect(silentOutput).connect(context.destination);
       } catch (audioError) {
         setError(`Screen sharing is live, but microphone capture failed: ${message(audioError)}`);
       }
@@ -106,12 +107,23 @@ export default function CaptureWorkspace() {
 
   async function selectRegion(selection: BBox) {
     const version = ++captureVersion.current;
+    const startedAt = performance.now();
     setBbox(selection);
     setError(null);
     try {
       if (!videoRef.current) return;
       const nextImages = await captureSelection(videoRef.current, selection);
-      if (version === captureVersion.current) setImages(nextImages);
+      if (version !== captureVersion.current) return;
+      setImages(nextImages);
+      onCapture(
+        {
+          bbox: selection,
+          annotatedFrame: nextImages.annotatedFrame,
+          crop: nextImages.crop,
+          audioPcm16: pcmToBase64(ring.current.snapshot()),
+        },
+        performance.now() - startedAt,
+      );
     } catch (captureError) {
       if (version === captureVersion.current) setError(message(captureError));
     }
@@ -145,6 +157,7 @@ export default function CaptureWorkspace() {
           aspectRatio={aspectRatio}
           bbox={bbox}
           showBbox={showBbox}
+          focused={explainStatus === "loading" || explainStatus === "streaming"}
           onVideoReady={() => {
             const video = videoRef.current;
             if (video?.videoWidth && video.videoHeight) {

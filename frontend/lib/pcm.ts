@@ -38,6 +38,16 @@ export class PcmRingBuffer {
   }
 }
 
+export function pcmToBase64(samples: Int16Array) {
+  const bytes = new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength);
+  let binary = "";
+  const chunkSize = 32_768;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
 export function downloadPcmAsWav(samples: Int16Array, filename: string) {
   const buffer = new ArrayBuffer(44 + samples.byteLength);
   const view = new DataView(buffer);
