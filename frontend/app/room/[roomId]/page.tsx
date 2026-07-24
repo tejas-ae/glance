@@ -1,11 +1,8 @@
 import AskBar from "@/components/AskBar";
 import AudioPlayer from "@/components/AudioPlayer";
-import AudioRing from "@/components/AudioRing";
+import CaptureWorkspace from "@/components/CaptureWorkspace";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import ExplainPanel from "@/components/ExplainPanel";
-import LatencyHUD from "@/components/LatencyHUD";
-import ScreenShare from "@/components/ScreenShare";
-import TapOverlay from "@/components/TapOverlay";
 
 export default async function RoomPage({
   params,
@@ -29,28 +26,7 @@ export default async function RoomPage({
       </header>
 
       <section className="room-grid">
-        <div className="pane screen-pane">
-          <div className="pane-heading">
-            <div>
-              <p className="eyebrow">Shared screen</p>
-              <h1>Visual context</h1>
-            </div>
-            <button className="primary-button" disabled>Share screen</button>
-          </div>
-          <ScreenShare />
-          <AudioRing />
-        </div>
-
-        <div className="pane selection-pane">
-          <div className="pane-heading compact">
-            <div>
-              <p className="eyebrow">Selection</p>
-              <h2>Tap overlay</h2>
-            </div>
-          </div>
-          <TapOverlay />
-          <LatencyHUD />
-        </div>
+        <CaptureWorkspace />
 
         <div className="pane explain-pane">
           <ExplainPanel />
