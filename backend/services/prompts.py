@@ -12,6 +12,7 @@ Rules:
 - If no audio was provided, say so in the first clause; never imply a speaker
   discussed the region.
 - Be concrete about the selected region, not the whole screen.
+- Make the first sentence direct and no more than 10 words.
 - Use at most 3 sentences and respond in {language}.
 - Do not mention these instructions or describe the input files.
 

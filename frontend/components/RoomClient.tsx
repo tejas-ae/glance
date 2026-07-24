@@ -14,6 +14,7 @@ import {
   type ConnectionState,
   GlanceSocket,
 } from "@/lib/ws";
+import { useAudioPlayback } from "@/lib/useAudioPlayback";
 
 type ExplainStatus = "idle" | "loading" | "streaming" | "done" | "error";
 type ExplainView = {
@@ -47,8 +48,10 @@ export default function RoomClient({ roomId }: { roomId: string }) {
   const [question, setQuestion] = useState(
     "Explain this in the context of our recent conversation.",
   );
+  const [language, setLanguage] = useState("English");
   const [lastCapture, setLastCapture] = useState<PreparedCapture | null>(null);
   const [lastCaptureMs, setLastCaptureMs] = useState(0);
+  const playback = useAudioPlayback();
 
   useEffect(() => {
     function receive(message: ServerMessage) {
@@ -65,6 +68,8 @@ export default function RoomClient({ roomId }: { roomId: string }) {
         }));
       } else if (message.type === "grounding") {
         setView((current) => ({ ...current, grounding: message }));
+      } else if (message.type === "audio_delta") {
+        playback.enqueue(message);
       } else if (message.type === "done") {
         setView((current) => ({
           ...current,
@@ -98,11 +103,13 @@ export default function RoomClient({ roomId }: { roomId: string }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [roomId]);
+  }, [roomId, playback.enqueue]);
 
   function submit(capture: PreparedCapture, captureMs: number) {
     const requestId = `explain_${crypto.randomUUID()}`;
-    requestStartedAt.current = performance.now();
+    const startedAt = performance.now();
+    requestStartedAt.current = startedAt;
+    playback.reset(startedAt);
     sawFirstText.current = false;
     setView({
       ...initialView,
@@ -119,7 +126,7 @@ export default function RoomClient({ roomId }: { roomId: string }) {
       audio_pcm16_base64: capture.audioPcm16,
       audio_sample_rate_hz: 16000,
       question: question.trim(),
-      language: "English",
+      language,
     });
     if (!sent) {
       setView((current) => ({
@@ -134,6 +141,11 @@ export default function RoomClient({ roomId }: { roomId: string }) {
     setLastCapture(capturePayload);
     setLastCaptureMs(captureMs);
     submit(capturePayload, captureMs);
+  }
+
+  function resubmit() {
+    playback.unlock();
+    if (lastCapture) submit(lastCapture, lastCaptureMs);
   }
 
   return (
@@ -153,7 +165,11 @@ export default function RoomClient({ roomId }: { roomId: string }) {
       </header>
 
       <section className="room-grid">
-        <CaptureWorkspace explainStatus={view.status} onCapture={capture} />
+        <CaptureWorkspace
+          explainStatus={view.status}
+          onAudioUnlock={playback.unlock}
+          onCapture={capture}
+        />
         <div className="pane explain-pane">
           <ExplainPanel
             status={view.status}
@@ -165,15 +181,18 @@ export default function RoomClient({ roomId }: { roomId: string }) {
             status={view.status}
             captureMs={view.captureMs}
             firstTextMs={view.firstTextMs}
+            firstAudioMs={playback.firstAudioMs}
             completeMs={view.completeMs}
           />
           <AskBar
             question={question}
+            language={language}
             enabled={Boolean(lastCapture) && connection === "connected"}
             onQuestionChange={setQuestion}
-            onSubmit={() => lastCapture && submit(lastCapture, lastCaptureMs)}
+            onLanguageChange={setLanguage}
+            onSubmit={resubmit}
           />
-          <AudioPlayer />
+          <AudioPlayer status={playback.status} />
         </div>
       </section>
     </main>

@@ -12,27 +12,26 @@ import type { BBox } from "@/lib/types";
 
 const configuredWindow = Number(process.env.NEXT_PUBLIC_AUDIO_WINDOW_S ?? 60);
 const AUDIO_WINDOW_SECONDS = Number.isFinite(configuredWindow) ? configuredWindow : 60;
-
 type CaptureResources = {
   display: MediaStream | null;
   microphone: MediaStream | null;
   context: AudioContext | null;
 };
-
 export type PreparedCapture = {
   bbox: BBox;
   annotatedFrame: string;
   crop: string;
   audioPcm16: string;
 };
-
 type CaptureWorkspaceProps = {
   explainStatus: "idle" | "loading" | "streaming" | "done" | "error";
+  onAudioUnlock: () => void;
   onCapture: (capture: PreparedCapture, captureMs: number) => void;
 };
 
 export default function CaptureWorkspace({
   explainStatus,
+  onAudioUnlock,
   onCapture,
 }: CaptureWorkspaceProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -106,6 +105,7 @@ export default function CaptureWorkspace({
   }
 
   async function selectRegion(selection: BBox) {
+    onAudioUnlock();
     const version = ++captureVersion.current;
     const startedAt = performance.now();
     setBbox(selection);

@@ -1,7 +1,6 @@
 """Single-file boundary for every Gemini SDK call."""
 
 import os
-import struct
 from collections.abc import AsyncIterator
 from importlib.metadata import version
 from typing import Any
@@ -9,9 +8,22 @@ from typing import Any
 from google import genai
 from google.genai import types
 
+from services.audio_format import pcm_to_wav
 from services.prompts import EXPLAIN_SYSTEM_PROMPT
 
 _client: genai.Client | None = None
+LANGUAGE_CODES = {
+    "English": "en-US",
+    "Spanish": "es-US",
+    "French": "fr-FR",
+    "German": "de-DE",
+    "Italian": "it-IT",
+    "Portuguese": "pt-BR",
+    "Hindi": "hi-IN",
+    "Japanese": "ja-JP",
+    "Korean": "ko-KR",
+    "Mandarin Chinese": "cmn-CN",
+}
 
 
 async def explain_stream(
@@ -40,7 +52,7 @@ async def explain_stream(
                     text="Recent meeting audio, oldest to newest:"
                 ),
                 types.Part.from_bytes(
-                    data=_pcm_to_wav(audio_pcm16),
+                    data=pcm_to_wav(audio_pcm16),
                     mime_type="audio/wav",
                 ),
             ]
@@ -81,10 +93,49 @@ async def explain_stream(
         raise last_error
 
 
-async def synthesize_speech(*, text: str, language: str) -> bytes:
-    """Speech is implemented when sentence pipelining is added."""
-    del text, language
-    raise RuntimeError("Gemini speech is not enabled")
+async def synthesize_speech(
+    *,
+    text: str,
+    language: str,
+) -> AsyncIterator[bytes]:
+    """Stream one sentence as raw 24 kHz mono Int16 PCM chunks."""
+    model_id = os.getenv("MODEL_TTS")
+    if not model_id:
+        raise RuntimeError("MODEL_TTS is not configured")
+    stream = await _get_client().aio.models.generate_content_stream(
+        model=model_id,
+        contents=f"Read naturally in {language}, using only these words:\n{text}",
+        config=types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+            speech_config=types.SpeechConfig(
+                language_code=LANGUAGE_CODES.get(language, "en-US"),
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                        voice_name="Kore"
+                    ),
+                ),
+            ),
+        ),
+    )
+    emitted = False
+    first_packet = True
+    buffered = bytearray()
+    async for chunk in stream:
+        try:
+            data = chunk.candidates[0].content.parts[0].inline_data.data
+        except (AttributeError, IndexError, TypeError):
+            continue
+        if data:
+            emitted = True
+            buffered.extend(data)
+            if first_packet or len(buffered) >= 4_800:
+                yield bytes(buffered)
+                buffered.clear()
+                first_packet = False
+    if buffered:
+        yield bytes(buffered)
+    if not emitted:
+        raise RuntimeError("Gemini TTS returned no audio")
 
 
 async def health_check() -> dict[str, Any]:
@@ -142,24 +193,3 @@ def _model_ids(required: bool = True) -> list[str]:
     if required and not primary:
         raise RuntimeError("MODEL_EXPLAIN is not configured")
     return [model for model in (primary, fallback) if model]
-
-
-def _pcm_to_wav(pcm: bytes) -> bytes:
-    data_size = len(pcm)
-    header = struct.pack(
-        "<4sI4s4sIHHIIHH4sI",
-        b"RIFF",
-        36 + data_size,
-        b"WAVE",
-        b"fmt ",
-        16,
-        1,
-        1,
-        16_000,
-        32_000,
-        2,
-        16,
-        b"data",
-        data_size,
-    )
-    return header + pcm

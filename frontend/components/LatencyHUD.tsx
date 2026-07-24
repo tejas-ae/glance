@@ -2,6 +2,7 @@ type LatencyHUDProps = {
   status: string;
   captureMs: number | null;
   firstTextMs: number | null;
+  firstAudioMs: number | null;
   completeMs: number | null;
 };
 
@@ -9,6 +10,7 @@ export default function LatencyHUD({
   status,
   captureMs,
   firstTextMs,
+  firstAudioMs,
   completeMs,
 }: LatencyHUDProps) {
   return (
@@ -17,6 +19,7 @@ export default function LatencyHUD({
       <dl>
         <dt>Capture</dt><dd>{format(captureMs)}</dd>
         <dt>First text</dt><dd>{format(firstTextMs)}</dd>
+        <dt>First audio</dt><dd>{format(firstAudioMs)}</dd>
         <dt>Complete</dt><dd>{format(completeMs)}</dd>
       </dl>
     </aside>

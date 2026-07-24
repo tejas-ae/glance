@@ -20,6 +20,8 @@ from models.schemas import (
 )
 from services.gemini_client import explain_stream
 from services.response_parser import SentinelParser
+from services.sentences import SentenceBuffer
+from services.tts import create_tts_task
 
 SendJson = Callable[[dict[str, Any]], Awaitable[None]]
 
@@ -64,6 +66,8 @@ async def stream_real_explanation(
 ) -> None:
     started_at = perf_counter()
     parser = SentinelParser()
+    sentences = SentenceBuffer()
+    tts_tasks: list[asyncio.Task[int]] = []
     sequence = 0
     chunks = explain_stream(
         annotated_frame_jpeg=decode_base64(
@@ -74,19 +78,45 @@ async def stream_real_explanation(
         question=request.question,
         language=request.language,
     )
-    async for chunk in chunks:
-        explanation_text = parser.feed(chunk)
-        if explanation_text:
-            await send_text(
-                send_json,
-                request.request_id,
-                sequence,
-                explanation_text,
-            )
-            sequence += 1
+    try:
+        async for chunk in chunks:
+            explanation_text = parser.feed(chunk)
+            if explanation_text:
+                await send_text(
+                    send_json,
+                    request.request_id,
+                    sequence,
+                    explanation_text,
+                )
+                sequence += 1
+                for sentence in sentences.feed(explanation_text):
+                    tts_tasks.append(
+                        create_tts_task(
+                            request,
+                            sentence,
+                            tts_tasks[-1] if tts_tasks else None,
+                            send_json,
+                        )
+                    )
 
-    await send_grounding(send_json, request.request_id, parser.finish())
-    await send_done(send_json, request.request_id, started_at)
+        remaining = sentences.finish()
+        if remaining:
+            tts_tasks.append(
+                create_tts_task(
+                    request,
+                    remaining,
+                    tts_tasks[-1] if tts_tasks else None,
+                    send_json,
+                )
+            )
+        await send_grounding(send_json, request.request_id, parser.finish())
+        if tts_tasks:
+            await asyncio.gather(*tts_tasks)
+        await send_done(send_json, request.request_id, started_at)
+    except BaseException:
+        for task in tts_tasks:
+            task.cancel()
+        raise
 
 
 async def send_text(

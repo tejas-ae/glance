@@ -1,7 +1,16 @@
-export default function AudioPlayer() {
+import type { AudioStatus } from "@/lib/useAudioPlayback";
+
+export default function AudioPlayer({ status }: { status: AudioStatus }) {
   return (
-    <button className="audio-player" type="button" disabled>
-      Audio response unavailable
-    </button>
+    <div className={`audio-player audio-${status}`} role="status">
+      <span aria-hidden="true">{status === "playing" ? "◖))" : "◖"}</span>
+      {label(status)}
+    </div>
   );
+}
+
+function label(status: AudioStatus) {
+  if (status === "playing") return "Playing explanation";
+  if (status === "ready") return "Speech ready";
+  return "Speech unlocks when you select a region";
 }
