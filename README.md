@@ -31,7 +31,7 @@ Prerequisites: Node.js 20+, Python 3.11, and two terminal windows. The default
 configuration is fully local and keeps AI disabled.
 
 ```bash
-git clone <repo-url> glance && cd glance
+git clone https://github.com/tejas-ae/glance.git && cd glance
 cp .env.example .env
 python3.11 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements.txt && npm --prefix frontend install
 (cd backend && set -a && source ../.env && set +a && .venv/bin/uvicorn main:app --reload --port 8000)
@@ -66,6 +66,8 @@ the final `open` with `xdg-open`. The API health check is at
 | `ARTIFACT_REPOSITORY` | `glance` | Artifact Registry repository name. |
 | `BACKEND_SERVICE` | `glance-backend` | Cloud Run backend service name. |
 | `FRONTEND_SERVICE` | `glance-frontend` | Cloud Run frontend service name. |
+| `BUILD_SERVICE_ACCOUNT` | `glance-build` | Dedicated identity used only for Cloud Run source builds. |
+| `RUNTIME_SERVICE_ACCOUNT` | `glance-runtime` | Dedicated identity used by deployed containers. |
 
 ## Project structure
 

@@ -53,6 +53,12 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .room-meta strong { color: #15201d; }
 .status-pill { display: inline-flex; align-items: center; gap: 7px; margin-left: 12px; }
 .status-pill i { width: 7px; height: 7px; border-radius: 50%; background: #a2aaa7; }
+.status-connected { color: #1d6b4c; border-color: rgba(29,107,76,.28); background: #eaf8f0; }
+.status-connected i { background: #27a66d; box-shadow: 0 0 0 3px rgba(39,166,109,.13); }
+.status-connecting { color: #7d6527; border-color: rgba(157,125,42,.25); background: #fff8e3; }
+.status-connecting i { background: #d7a52e; }
+.status-disconnected { color: #9b3f35; border-color: rgba(155,63,53,.24); background: #fff0ed; }
+.status-disconnected i { background: #d95749; }
 .room-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(240px, .6fr) minmax(300px, .8fr); gap: 16px; min-height: calc(100vh - 125px); }
 .pane { display: flex; min-width: 0; flex-direction: column; border: 1px solid rgba(33,88,73,.12); border-radius: 20px; background: rgba(255,255,255,.87); padding: 20px; box-shadow: 0 14px 45px rgba(21,32,29,.06); }
 .pane-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }

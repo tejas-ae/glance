@@ -14,6 +14,12 @@ export type JoinMessage = {
   client_id: string;
 };
 
+export type PingMessage = {
+  type: "ping";
+  request_id: string;
+  room_id: string;
+};
+
 export type ExplainRequestMessage = {
   type: "explain_request";
   request_id: string;
@@ -38,6 +44,7 @@ export type FollowUpMessage = {
 
 export type ClientMessage =
   | JoinMessage
+  | PingMessage
   | ExplainRequestMessage
   | FollowUpMessage;
 
@@ -45,7 +52,7 @@ export type AckMessage = {
   type: "ack";
   request_id: string;
   room_id: string;
-  kind: "joined" | "request_received";
+  kind: "joined" | "pong" | "request_received";
   server_time: string;
 };
 

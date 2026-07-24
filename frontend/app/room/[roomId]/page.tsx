@@ -1,6 +1,7 @@
 import AskBar from "@/components/AskBar";
 import AudioPlayer from "@/components/AudioPlayer";
 import AudioRing from "@/components/AudioRing";
+import ConnectionStatus from "@/components/ConnectionStatus";
 import ExplainPanel from "@/components/ExplainPanel";
 import LatencyHUD from "@/components/LatencyHUD";
 import ScreenShare from "@/components/ScreenShare";
@@ -23,10 +24,7 @@ export default async function RoomPage({
         <div className="room-meta">
           <span>Room</span>
           <strong>{decodeURIComponent(roomId)}</strong>
-          <span className="status-pill">
-            <i />
-            Offline
-          </span>
+          <ConnectionStatus roomId={decodeURIComponent(roomId)} />
         </div>
       </header>
 

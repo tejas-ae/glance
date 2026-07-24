@@ -12,6 +12,10 @@ PROJECT_ID="${GOOGLE_CLOUD_PROJECT:?Set GOOGLE_CLOUD_PROJECT first}"
 REGION="${GOOGLE_CLOUD_REGION:-us-central1}"
 BACKEND="${BACKEND_SERVICE:-glance-backend}"
 FRONTEND="${FRONTEND_SERVICE:-glance-frontend}"
+BUILD_ACCOUNT="${BUILD_SERVICE_ACCOUNT:-glance-build}"
+RUNTIME_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT:-glance-runtime}"
+BUILD_EMAIL="${BUILD_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com"
+RUNTIME_EMAIL="${RUNTIME_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com"
 EXPLAIN_MODEL="${MODEL_EXPLAIN:?Set MODEL_EXPLAIN in .env}"
 EXPLAIN_FALLBACK_MODEL="${MODEL_EXPLAIN_FALLBACK:?Set MODEL_EXPLAIN_FALLBACK in .env}"
 TTS_MODEL="${MODEL_TTS:?Set MODEL_TTS in .env}"
@@ -21,6 +25,8 @@ gcloud run deploy "${BACKEND}" \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
   --source="${ROOT_DIR}/backend" \
+  --build-service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_EMAIL}" \
+  --service-account="${RUNTIME_EMAIL}" \
   --allow-unauthenticated \
   --min-instances=1 \
   --max-instances=1 \
@@ -38,6 +44,8 @@ gcloud run deploy "${FRONTEND}" \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
   --source="${ROOT_DIR}/frontend" \
+  --build-service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_EMAIL}" \
+  --service-account="${RUNTIME_EMAIL}" \
   --allow-unauthenticated \
   --min-instances=1 \
   --max-instances=1 \

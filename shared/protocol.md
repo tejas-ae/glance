@@ -22,12 +22,7 @@ inside JSON during the hackathon build.
 ### `join`
 
 ```json
-{
-  "type": "join",
-  "request_id": "join_01JAZ8M7K7Q",
-  "room_id": "demo-room",
-  "client_id": "client_9d18"
-}
+{"type":"join","request_id":"join_01JAZ8M7K7Q","room_id":"demo-room","client_id":"client_9d18"}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -36,21 +31,21 @@ inside JSON during the hackathon build.
 | `room_id` | string | yes | Human-entered room code. |
 | `client_id` | string | yes | In-memory ID for this browser tab. |
 
+### `ping`
+
+```json
+{"type":"ping","request_id":"ping_01JAZ8N1D2C","room_id":"demo-room"}
+```
+| Field | Type | Required | Meaning |
+|---|---|---:|---|
+| `type` | `"ping"` | yes | Message discriminator. |
+| `request_id` | string | yes | Unique ID used to measure this round trip. |
+| `room_id` | string | yes | Current room code. |
+
 ### `explain_request`
 
 ```json
-{
-  "type": "explain_request",
-  "request_id": "req_01JAZ8PN4ND",
-  "room_id": "demo-room",
-  "bbox": {"x": 0.12, "y": 0.18, "width": 0.31, "height": 0.22},
-  "annotated_frame_jpeg_base64": "/9j/4AAQSkZJRg...",
-  "crop_jpeg_base64": "/9j/4AAQSkZJRg...",
-  "audio_pcm16_base64": "AACQ/2kA...",
-  "audio_sample_rate_hz": 16000,
-  "question": "What does this part mean?",
-  "language": "English"
-}
+{"type":"explain_request","request_id":"req_01JAZ8PN4ND","room_id":"demo-room","bbox":{"x":0.12,"y":0.18,"width":0.31,"height":0.22},"annotated_frame_jpeg_base64":"/9j/4AAQSkZJRg...","crop_jpeg_base64":"/9j/4AAQSkZJRg...","audio_pcm16_base64":"AACQ/2kA...","audio_sample_rate_hz":16000,"question":"What does this part mean?","language":"English"}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -68,14 +63,7 @@ inside JSON during the hackathon build.
 ### `follow_up`
 
 ```json
-{
-  "type": "follow_up",
-  "request_id": "req_01JAZ8TAP3G",
-  "room_id": "demo-room",
-  "parent_request_id": "req_01JAZ8PN4ND",
-  "question": "How does that affect the next step?",
-  "language": "English"
-}
+{"type":"follow_up","request_id":"req_01JAZ8TAP3G","room_id":"demo-room","parent_request_id":"req_01JAZ8PN4ND","question":"How does that affect the next step?","language":"English"}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -91,31 +79,20 @@ inside JSON during the hackathon build.
 ### `ack`
 
 ```json
-{
-  "type": "ack",
-  "request_id": "join_01JAZ8M7K7Q",
-  "room_id": "demo-room",
-  "kind": "joined",
-  "server_time": "2026-07-24T16:20:00Z"
-}
+{"type":"ack","request_id":"join_01JAZ8M7K7Q","room_id":"demo-room","kind":"joined","server_time":"2026-07-24T16:20:00Z"}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | `type` | `"ack"` | yes | Message discriminator. |
 | `request_id` | string | yes | Originating client request. |
 | `room_id` | string | yes | Room the server acknowledged. |
-| `kind` | `"joined"` or `"request_received"` | yes | What was acknowledged. |
+| `kind` | `"joined"`, `"pong"`, or `"request_received"` | yes | What was acknowledged. |
 | `server_time` | string | yes | UTC ISO 8601 server time. |
 
 ### `text_delta`
 
 ```json
-{
-  "type": "text_delta",
-  "request_id": "req_01JAZ8PN4ND",
-  "seq": 0,
-  "delta": "The red arrow represents "
-}
+{"type":"text_delta","request_id":"req_01JAZ8PN4ND","seq":0,"delta":"The red arrow represents "}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -127,14 +104,7 @@ inside JSON during the hackathon build.
 ### `grounding`
 
 ```json
-{
-  "type": "grounding",
-  "request_id": "req_01JAZ8PN4ND",
-  "grounding_quote": "we fan the result out to both workers",
-  "grounding_offset_seconds": -10.4,
-  "confidence": 0.91,
-  "region_label": "fan-out arrow"
-}
+{"type":"grounding","request_id":"req_01JAZ8PN4ND","grounding_quote":"we fan the result out to both workers","grounding_offset_seconds":-10.4,"confidence":0.91,"region_label":"fan-out arrow"}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -148,13 +118,7 @@ inside JSON during the hackathon build.
 ### `audio_delta`
 
 ```json
-{
-  "type": "audio_delta",
-  "request_id": "req_01JAZ8PN4ND",
-  "seq": 0,
-  "audio_pcm16_base64": "AACQ/2kA...",
-  "audio_sample_rate_hz": 24000
-}
+{"type":"audio_delta","request_id":"req_01JAZ8PN4ND","seq":0,"audio_pcm16_base64":"AACQ/2kA...","audio_sample_rate_hz":24000}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -167,11 +131,7 @@ inside JSON during the hackathon build.
 ### `done`
 
 ```json
-{
-  "type": "done",
-  "request_id": "req_01JAZ8PN4ND",
-  "latency_ms": 1842
-}
+{"type":"done","request_id":"req_01JAZ8PN4ND","latency_ms":1842}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -182,13 +142,7 @@ inside JSON during the hackathon build.
 ### `error`
 
 ```json
-{
-  "type": "error",
-  "request_id": "req_01JAZ8PN4ND",
-  "code": "MODEL_UNAVAILABLE",
-  "message": "The explanation model is temporarily unavailable.",
-  "retryable": true
-}
+{"type":"error","request_id":"req_01JAZ8PN4ND","code":"MODEL_UNAVAILABLE","message":"The explanation model is temporarily unavailable.","retryable":true}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|

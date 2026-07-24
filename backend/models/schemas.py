@@ -25,6 +25,12 @@ class JoinMessage(BaseModel):
     client_id: str
 
 
+class PingMessage(BaseModel):
+    type: Literal["ping"]
+    request_id: str
+    room_id: str
+
+
 class ExplainRequestMessage(BaseModel):
     type: Literal["explain_request"]
     request_id: str
@@ -48,7 +54,7 @@ class FollowUpMessage(BaseModel):
 
 
 ClientMessage = Annotated[
-    JoinMessage | ExplainRequestMessage | FollowUpMessage,
+    JoinMessage | PingMessage | ExplainRequestMessage | FollowUpMessage,
     Field(discriminator="type"),
 ]
 
@@ -57,7 +63,7 @@ class AckMessage(BaseModel):
     type: Literal["ack"]
     request_id: str
     room_id: str
-    kind: Literal["joined", "request_received"]
+    kind: Literal["joined", "pong", "request_received"]
     server_time: str
 
 
