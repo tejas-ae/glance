@@ -12,5 +12,6 @@ export default function AudioPlayer({ status }: { status: AudioStatus }) {
 function label(status: AudioStatus) {
   if (status === "playing") return "Playing explanation";
   if (status === "ready") return "Speech ready";
+  if (status === "unavailable") return "Speech unavailable — text still works";
   return "Speech unlocks when you select a region";
 }

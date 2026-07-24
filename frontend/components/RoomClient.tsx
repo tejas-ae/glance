@@ -48,7 +48,6 @@ export default function RoomClient({ roomId }: { roomId: string }) {
   const [lastCapture, setLastCapture] = useState<PreparedCapture | null>(null);
   const [lastCaptureMs, setLastCaptureMs] = useState(0);
   const playback = useAudioPlayback();
-
   useEffect(() => {
     function receive(message: ServerMessage) {
       if (message.type === "text_delta") {
@@ -67,6 +66,7 @@ export default function RoomClient({ roomId }: { roomId: string }) {
       } else if (message.type === "audio_delta") {
         playback.enqueue(message);
       } else if (message.type === "done") {
+        if (!message.audio_available) playback.markUnavailable();
         setView((current) => ({
           ...current,
           status: "done",
@@ -99,7 +99,7 @@ export default function RoomClient({ roomId }: { roomId: string }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [roomId, playback.enqueue]);
+  }, [roomId, playback.enqueue, playback.markUnavailable]);
 
   function submit(capture: PreparedCapture, captureMs: number) {
     const requestId = `explain_${crypto.randomUUID()}`;

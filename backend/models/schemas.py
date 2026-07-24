@@ -5,6 +5,12 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+RoomId = Annotated[
+    str,
+    Field(min_length=1, max_length=64, pattern=r"^[a-z0-9-]+$"),
+]
+RequestId = Annotated[str, Field(min_length=1, max_length=128)]
+
 
 class BBox(BaseModel):
     x: float = Field(ge=0, le=1)
@@ -21,38 +27,38 @@ class BBox(BaseModel):
 
 class JoinMessage(BaseModel):
     type: Literal["join"]
-    request_id: str
-    room_id: str
-    client_id: str
+    request_id: RequestId
+    room_id: RoomId
+    client_id: Annotated[str, Field(min_length=1, max_length=128)]
 
 
 class PingMessage(BaseModel):
     type: Literal["ping"]
-    request_id: str
-    room_id: str
+    request_id: RequestId
+    room_id: RoomId
 
 
 class ExplainRequestMessage(BaseModel):
     type: Literal["explain_request"]
-    request_id: str
-    room_id: str
+    request_id: RequestId
+    room_id: RoomId
     bbox: BBox
-    annotated_frame_jpeg_base64: str
-    crop_jpeg_base64: str
-    thumbnail_jpeg_base64: str
-    audio_pcm16_base64: str
+    annotated_frame_jpeg_base64: Annotated[str, Field(max_length=4_000_000)]
+    crop_jpeg_base64: Annotated[str, Field(max_length=4_000_000)]
+    thumbnail_jpeg_base64: Annotated[str, Field(max_length=300_000)]
+    audio_pcm16_base64: Annotated[str, Field(max_length=3_000_000)]
     audio_sample_rate_hz: Literal[16000]
-    question: str
-    language: str
+    question: Annotated[str, Field(min_length=1, max_length=500)]
+    language: Annotated[str, Field(min_length=1, max_length=40)]
 
 
 class FollowUpMessage(BaseModel):
     type: Literal["follow_up"]
-    request_id: str
-    room_id: str
-    parent_request_id: str
-    question: str
-    language: str
+    request_id: RequestId
+    room_id: RoomId
+    parent_request_id: RequestId
+    question: Annotated[str, Field(min_length=1, max_length=500)]
+    language: Annotated[str, Field(min_length=1, max_length=40)]
 
 
 ClientMessage = Annotated[
@@ -97,6 +103,7 @@ class DoneMessage(BaseModel):
     type: Literal["done"]
     request_id: str
     latency_ms: int = Field(ge=0)
+    audio_available: bool
 
 
 class ErrorMessage(BaseModel):

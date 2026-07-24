@@ -71,6 +71,8 @@ paths ending in `z`, so its edge may intercept `/healthz` before FastAPI.
 | `FRONTEND_SERVICE` | `glance-frontend` | Cloud Run frontend service name. |
 | `BUILD_SERVICE_ACCOUNT` | `glance-build` | Dedicated identity used only for Cloud Run source builds. |
 | `RUNTIME_SERVICE_ACCOUNT` | `glance-runtime` | Dedicated identity used by deployed containers. |
+| `PUBLIC_DEMO` | `false` | Keeps deploys private unless public demo access is explicitly requested. |
+| `VERIFY_DEPLOY` | `true` | Runs HTTP and WebSocket checks after a public deploy. |
 
 ## Project structure
 
@@ -80,6 +82,7 @@ glance/
 ├── frontend/     # Next.js room UI, browser capture, and audio playback
 ├── backend/      # FastAPI gateway, Gemini adapter, TTS, and persistence
 ├── infra/        # Idempotent-ish Google Cloud setup and deploy scripts
+├── docs/         # Demo sequence, safety switches, and recovery steps
 └── demo/         # Demo media; demo.gif is added before judging
 ```
 
