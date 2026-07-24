@@ -1,5 +1,6 @@
 """Pydantic mirrors of shared/protocol.md, the protocol source of truth."""
 
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -38,6 +39,7 @@ class ExplainRequestMessage(BaseModel):
     bbox: BBox
     annotated_frame_jpeg_base64: str
     crop_jpeg_base64: str
+    thumbnail_jpeg_base64: str
     audio_pcm16_base64: str
     audio_sample_rate_hz: Literal[16000]
     question: str
@@ -114,3 +116,18 @@ ServerMessage = Annotated[
     | ErrorMessage,
     Field(discriminator="type"),
 ]
+
+
+class RecapArtifact(BaseModel):
+    id: str
+    thumbnail_url: str
+    question: str
+    answer: str
+    grounding_quote: str
+    timestamp: datetime | None
+    latency_ms: int = Field(ge=0)
+
+
+class RecapResponse(BaseModel):
+    room_id: str
+    artifacts: list[RecapArtifact]

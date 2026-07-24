@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
 import AskBar from "./AskBar";
 import AudioPlayer from "./AudioPlayer";
 import CaptureWorkspace, { type PreparedCapture } from "./CaptureWorkspace";
@@ -15,7 +14,6 @@ import {
   GlanceSocket,
 } from "@/lib/ws";
 import { useAudioPlayback } from "@/lib/useAudioPlayback";
-
 type ExplainStatus = "idle" | "loading" | "streaming" | "done" | "error";
 type ExplainView = {
   status: ExplainStatus;
@@ -26,7 +24,6 @@ type ExplainView = {
   firstTextMs: number | null;
   completeMs: number | null;
 };
-
 const initialView: ExplainView = {
   status: "idle",
   text: "",
@@ -36,7 +33,6 @@ const initialView: ExplainView = {
   firstTextMs: null,
   completeMs: null,
 };
-
 export default function RoomClient({ roomId }: { roomId: string }) {
   const socketRef = useRef<GlanceSocket | null>(null);
   const requestStartedAt = useRef(0);
@@ -123,6 +119,7 @@ export default function RoomClient({ roomId }: { roomId: string }) {
       bbox: capture.bbox,
       annotated_frame_jpeg_base64: capture.annotatedFrame,
       crop_jpeg_base64: capture.crop,
+      thumbnail_jpeg_base64: capture.thumbnail,
       audio_pcm16_base64: capture.audioPcm16,
       audio_sample_rate_hz: 16000,
       question: question.trim(),
@@ -156,6 +153,9 @@ export default function RoomClient({ roomId }: { roomId: string }) {
         </a>
         <div className="room-meta">
           <span>Room</span><strong>{roomId}</strong>
+          <a className="recap-link" href={`/room/${encodeURIComponent(roomId)}/recap`}>
+            Recap
+          </a>
           <ConnectionStatus
             state={connection}
             latencyMs={networkLatency}

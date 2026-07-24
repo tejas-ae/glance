@@ -21,6 +21,7 @@ from models.schemas import (
 from services.gemini_client import explain_stream
 from services.response_parser import SentinelParser
 from services.sentences import SentenceBuffer
+from services.store import queue_artifact
 from services.tts import create_tts_task
 
 SendJson = Callable[[dict[str, Any]], Awaitable[None]]
@@ -33,23 +34,26 @@ async def stream_explanation(
     mock_mode: bool,
 ) -> None:
     if mock_mode:
-        await stream_mock_explanation(request.request_id, send_json)
+        await stream_mock_explanation(request, send_json)
     else:
         await stream_real_explanation(request, send_json)
 
 
-async def stream_mock_explanation(request_id: str, send_json: SendJson) -> None:
+async def stream_mock_explanation(
+    request: ExplainRequestMessage,
+    send_json: SendJson,
+) -> None:
     started_at = perf_counter()
     await asyncio.sleep(0.28)
 
     tokens = re.findall(r"\S+\s*", CANNED_EXPLANATION)
     for sequence, token in enumerate(tokens):
-        await send_text(send_json, request_id, sequence, token)
+        await send_text(send_json, request.request_id, sequence, token)
         await asyncio.sleep(0.04)
 
     await send_grounding(
         send_json,
-        request_id,
+        request.request_id,
         {
             "grounding_quote": CANNED_GROUNDING_QUOTE,
             "grounding_offset_seconds": -18.0,
@@ -57,7 +61,16 @@ async def stream_mock_explanation(request_id: str, send_json: SendJson) -> None:
             "region_label": CANNED_REGION_LABEL,
         },
     )
-    await send_done(send_json, request_id, started_at)
+    queue_artifact(
+        room_id=request.room_id,
+        request_id=request.request_id,
+        thumbnail_jpeg_base64=request.thumbnail_jpeg_base64,
+        question=request.question,
+        answer=CANNED_EXPLANATION,
+        grounding_quote=CANNED_GROUNDING_QUOTE,
+        latency_ms=elapsed_ms(started_at),
+    )
+    await send_done(send_json, request.request_id, started_at)
 
 
 async def stream_real_explanation(
@@ -68,6 +81,7 @@ async def stream_real_explanation(
     parser = SentinelParser()
     sentences = SentenceBuffer()
     tts_tasks: list[asyncio.Task[int]] = []
+    answer_parts: list[str] = []
     sequence = 0
     chunks = explain_stream(
         annotated_frame_jpeg=decode_base64(
@@ -82,6 +96,7 @@ async def stream_real_explanation(
         async for chunk in chunks:
             explanation_text = parser.feed(chunk)
             if explanation_text:
+                answer_parts.append(explanation_text)
                 await send_text(
                     send_json,
                     request.request_id,
@@ -109,7 +124,17 @@ async def stream_real_explanation(
                     send_json,
                 )
             )
-        await send_grounding(send_json, request.request_id, parser.finish())
+        metadata = parser.finish()
+        await send_grounding(send_json, request.request_id, metadata)
+        queue_artifact(
+            room_id=request.room_id,
+            request_id=request.request_id,
+            thumbnail_jpeg_base64=request.thumbnail_jpeg_base64,
+            question=request.question,
+            answer="".join(answer_parts).strip(),
+            grounding_quote=metadata["grounding_quote"],
+            latency_ms=elapsed_ms(started_at),
+        )
         if tts_tasks:
             await asyncio.gather(*tts_tasks)
         await send_done(send_json, request.request_id, started_at)
@@ -162,3 +187,7 @@ async def send_done(
 
 def decode_base64(value: str) -> bytes:
     return base64.b64decode(value, validate=True) if value else b""
+
+
+def elapsed_ms(started_at: float) -> int:
+    return round((perf_counter() - started_at) * 1000)

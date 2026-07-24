@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import "./capture.css";
 import "./explain.css";
+import "./recap.css";
 
 export const metadata: Metadata = {
   title: "Glance — look, listen, explain",

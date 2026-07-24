@@ -53,4 +53,9 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --role="roles/aiplatform.user" \
   --condition=None
 
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${RUNTIME_EMAIL}" \
+  --role="roles/datastore.user" \
+  --condition=None
+
 echo "Glance cloud resources are ready in ${PROJECT_ID}/${REGION}."

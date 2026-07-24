@@ -27,6 +27,7 @@ export type ExplainRequestMessage = {
   bbox: BBox;
   annotated_frame_jpeg_base64: string;
   crop_jpeg_base64: string;
+  thumbnail_jpeg_base64: string;
   audio_pcm16_base64: string;
   audio_sample_rate_hz: 16000;
   question: string;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import AudioRing from "./AudioRing";
 import ScreenShare from "./ScreenShare";
 import TapOverlay from "./TapOverlay";
@@ -9,7 +8,6 @@ import { captureSelection, type CaptureImages } from "@/lib/capture";
 import { connectMicrophone } from "@/lib/microphone";
 import { downloadPcmAsWav, pcmToBase64, PcmRingBuffer } from "@/lib/pcm";
 import type { BBox } from "@/lib/types";
-
 const configuredWindow = Number(process.env.NEXT_PUBLIC_AUDIO_WINDOW_S ?? 60);
 const AUDIO_WINDOW_SECONDS = Number.isFinite(configuredWindow) ? configuredWindow : 60;
 type CaptureResources = {
@@ -21,6 +19,7 @@ export type PreparedCapture = {
   bbox: BBox;
   annotatedFrame: string;
   crop: string;
+  thumbnail: string;
   audioPcm16: string;
 };
 type CaptureWorkspaceProps = {
@@ -120,6 +119,7 @@ export default function CaptureWorkspace({
           bbox: selection,
           annotatedFrame: nextImages.annotatedFrame,
           crop: nextImages.crop,
+          thumbnail: nextImages.thumbnail,
           audioPcm16: pcmToBase64(ring.current.snapshot()),
         },
         performance.now() - startedAt,

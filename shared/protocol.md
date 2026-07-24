@@ -45,7 +45,7 @@ inside JSON during the hackathon build.
 ### `explain_request`
 
 ```json
-{"type":"explain_request","request_id":"req_01JAZ8PN4ND","room_id":"demo-room","bbox":{"x":0.12,"y":0.18,"width":0.31,"height":0.22},"annotated_frame_jpeg_base64":"/9j/4AAQSkZJRg...","crop_jpeg_base64":"/9j/4AAQSkZJRg...","audio_pcm16_base64":"AACQ/2kA...","audio_sample_rate_hz":16000,"question":"What does this part mean?","language":"English"}
+{"type":"explain_request","request_id":"req_01JAZ8PN4ND","room_id":"demo-room","bbox":{"x":0.12,"y":0.18,"width":0.31,"height":0.22},"annotated_frame_jpeg_base64":"/9j/4AAQSkZJRg...","crop_jpeg_base64":"/9j/4AAQSkZJRg...","thumbnail_jpeg_base64":"/9j/4AAQSkZJRg...","audio_pcm16_base64":"AACQ/2kA...","audio_sample_rate_hz":16000,"question":"What does this part mean?","language":"English"}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -55,6 +55,7 @@ inside JSON during the hackathon build.
 | `bbox` | object | yes | Normalized selection: `x`, `y`, `width`, `height`. |
 | `annotated_frame_jpeg_base64` | string | yes | Full frame, at most 1280 px on its longest edge, with a red selection rectangle. |
 | `crop_jpeg_base64` | string | yes | Tight selected-region crop with about 8% padding. |
+| `thumbnail_jpeg_base64` | string | yes | Small recap-only JPEG; it is stored but never sent to Gemini. |
 | `audio_pcm16_base64` | string | yes | Up to the latest 60 seconds of raw mono PCM. |
 | `audio_sample_rate_hz` | integer | yes | PCM sample rate; currently `16000`. |
 | `question` | string | yes | User's typed or default question. |

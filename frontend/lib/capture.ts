@@ -4,10 +4,12 @@ type ReusableCanvas = OffscreenCanvas | HTMLCanvasElement;
 
 let frameCanvas: ReusableCanvas | null = null;
 let cropCanvas: ReusableCanvas | null = null;
+let thumbnailCanvas: ReusableCanvas | null = null;
 
 export type CaptureImages = {
   annotatedFrame: string;
   crop: string;
+  thumbnail: string;
 };
 
 export async function captureSelection(
@@ -63,11 +65,26 @@ export async function captureSelection(
     cropCanvas.height,
   );
 
-  const [annotatedFrame, crop] = await Promise.all([
+  const thumbnailScale = Math.min(1, 320 / Math.max(cropCanvas.width, cropCanvas.height));
+  thumbnailCanvas = prepareCanvas(
+    thumbnailCanvas,
+    Math.max(1, Math.round(cropCanvas.width * thumbnailScale)),
+    Math.max(1, Math.round(cropCanvas.height * thumbnailScale)),
+  );
+  getContext(thumbnailCanvas).drawImage(
+    cropCanvas,
+    0,
+    0,
+    thumbnailCanvas.width,
+    thumbnailCanvas.height,
+  );
+
+  const [annotatedFrame, crop, thumbnail] = await Promise.all([
     canvasToBase64(frameCanvas),
     canvasToBase64(cropCanvas),
+    canvasToBase64(thumbnailCanvas, 0.72),
   ]);
-  return { annotatedFrame, crop };
+  return { annotatedFrame, crop, thumbnail };
 }
 
 function prepareCanvas(canvas: ReusableCanvas | null, width: number, height: number) {
@@ -87,15 +104,15 @@ function getContext(canvas: ReusableCanvas) {
   return context as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 }
 
-async function canvasToBase64(canvas: ReusableCanvas) {
+async function canvasToBase64(canvas: ReusableCanvas, quality = 0.86) {
   const blob =
     typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas
-      ? await canvas.convertToBlob({ type: "image/jpeg", quality: 0.86 })
+      ? await canvas.convertToBlob({ type: "image/jpeg", quality })
       : await new Promise<Blob>((resolve, reject) =>
           (canvas as HTMLCanvasElement).toBlob(
             (value) => (value ? resolve(value) : reject(new Error("JPEG encoding failed."))),
             "image/jpeg",
-            0.86,
+            quality,
           ),
         );
   return blobToBase64(blob);
