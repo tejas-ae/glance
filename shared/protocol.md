@@ -16,6 +16,11 @@ inside JSON during the hackathon build.
   message explicitly says otherwise.
 - Times are UTC ISO 8601 strings; durations and offsets are milliseconds or
   seconds as named.
+- Room IDs are 1–64 lowercase letters, digits, or hyphens. Request and client
+  IDs are 1–128 characters.
+- Questions are 1–500 characters and language names are 1–40 characters.
+- Each full/crop image is limited to 4 MB of base64 text, thumbnails to 300 KB,
+  and audio to 3 MB.
 
 ## Client to server
 
@@ -150,13 +155,14 @@ harmless no-op.
 ### `done`
 
 ```json
-{"type":"done","request_id":"req_01JAZ8PN4ND","latency_ms":1842}
+{"type":"done","request_id":"req_01JAZ8PN4ND","latency_ms":1842,"audio_available":true}
 ```
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | `type` | `"done"` | yes | Message discriminator. |
 | `request_id` | string | yes | Originating explanation request. |
 | `latency_ms` | integer | yes | End-to-end server processing time. |
+| `audio_available` | boolean | yes | Whether at least one TTS audio segment was delivered. |
 
 ### `error`
 

@@ -93,6 +93,7 @@ export type DoneMessage = {
   type: "done";
   request_id: string;
   latency_ms: number;
+  audio_available: boolean;
 };
 
 export type ErrorMessage = {

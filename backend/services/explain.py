@@ -70,7 +70,7 @@ async def stream_mock_explanation(
         grounding_quote=CANNED_GROUNDING_QUOTE,
         latency_ms=elapsed_ms(started_at),
     )
-    await send_done(send_json, request.request_id, started_at)
+    await send_done(send_json, request.request_id, started_at, False)
 
 
 async def stream_real_explanation(
@@ -135,9 +135,13 @@ async def stream_real_explanation(
             grounding_quote=metadata["grounding_quote"],
             latency_ms=elapsed_ms(started_at),
         )
-        if tts_tasks:
-            await asyncio.gather(*tts_tasks)
-        await send_done(send_json, request.request_id, started_at)
+        audio_results = await asyncio.gather(*tts_tasks) if tts_tasks else []
+        await send_done(
+            send_json,
+            request.request_id,
+            started_at,
+            any(result > 0 for result in audio_results),
+        )
     except BaseException:
         for task in tts_tasks:
             task.cancel()
@@ -176,11 +180,13 @@ async def send_done(
     send_json: SendJson,
     request_id: str,
     started_at: float,
+    audio_available: bool,
 ) -> None:
     message = DoneMessage(
         type="done",
         request_id=request_id,
         latency_ms=round((perf_counter() - started_at) * 1000),
+        audio_available=audio_available,
     )
     await send_json(message.model_dump())
 

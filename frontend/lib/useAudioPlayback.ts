@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PcmAudioQueue } from "@/lib/audio";
 import type { AudioDeltaMessage } from "@/lib/types";
 
-export type AudioStatus = "locked" | "ready" | "playing";
+export type AudioStatus = "locked" | "ready" | "playing" | "unavailable";
 
 export function useAudioPlayback() {
   const queueRef = useRef<PcmAudioQueue | null>(null);
@@ -38,6 +38,10 @@ export function useAudioPlayback() {
     queueRef.current?.enqueue(message);
   }, []);
 
+  const markUnavailable = useCallback(() => {
+    setStatus("unavailable");
+  }, []);
+
   useEffect(() => {
     return () => {
       queueRef.current?.destroy();
@@ -45,5 +49,5 @@ export function useAudioPlayback() {
     };
   }, []);
 
-  return { status, firstAudioMs, unlock, reset, enqueue };
+  return { status, firstAudioMs, unlock, reset, enqueue, markUnavailable };
 }

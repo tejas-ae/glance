@@ -11,6 +11,7 @@ type SocketOptions = {
 };
 
 const HEARTBEAT_MS = 10_000;
+const PING_TIMEOUT_MS = 25_000;
 const MAX_RECONNECT_MS = 10_000;
 
 function requestId(prefix: string): string {
@@ -48,6 +49,7 @@ export class GlanceSocket {
 
     socket.onopen = () => {
       if (this.socket !== socket) return;
+      this.clearReconnect();
       const joinId = requestId("join");
       this.controlRequests.add(joinId);
       this.sendNow({
@@ -70,6 +72,7 @@ export class GlanceSocket {
       this.socket = null;
       this.stopHeartbeat();
       this.pendingPings.clear();
+      this.controlRequests.clear();
       if (this.stopped) return;
 
       const retryMs = Math.min(
@@ -78,6 +81,7 @@ export class GlanceSocket {
       );
       this.reconnectAttempts += 1;
       this.options.onStatus("disconnected", retryMs);
+      this.clearReconnect();
       this.reconnectTimer = setTimeout(() => this.connect(), retryMs);
     };
   }
@@ -121,9 +125,17 @@ export class GlanceSocket {
   }
 
   private ping(): void {
+    const now = performance.now();
+    const stalled = [...this.pendingPings.values()].some(
+      (startedAt) => now - startedAt > PING_TIMEOUT_MS,
+    );
+    if (stalled) {
+      this.socket?.close(4000, "Heartbeat timeout");
+      return;
+    }
     const pingId = requestId("ping");
     this.controlRequests.add(pingId);
-    this.pendingPings.set(pingId, performance.now());
+    this.pendingPings.set(pingId, now);
     this.sendNow({
       type: "ping",
       request_id: pingId,
