@@ -46,6 +46,13 @@ class ExplainRequestMessage(BaseModel):
     language: str
 
 
+class CancelMessage(BaseModel):
+    type: Literal["cancel"]
+    request_id: str
+    room_id: str
+    target_request_id: str
+
+
 class FollowUpMessage(BaseModel):
     type: Literal["follow_up"]
     request_id: str
@@ -56,7 +63,7 @@ class FollowUpMessage(BaseModel):
 
 
 ClientMessage = Annotated[
-    JoinMessage | PingMessage | ExplainRequestMessage | FollowUpMessage,
+    JoinMessage | PingMessage | ExplainRequestMessage | CancelMessage | FollowUpMessage,
     Field(discriminator="type"),
 ]
 
@@ -65,7 +72,7 @@ class AckMessage(BaseModel):
     type: Literal["ack"]
     request_id: str
     room_id: str
-    kind: Literal["joined", "pong", "request_received"]
+    kind: Literal["joined", "pong", "request_received", "cancelled"]
     server_time: str
 
 

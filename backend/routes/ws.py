@@ -11,6 +11,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from models.schemas import (
     AckMessage,
+    CancelMessage,
     ClientMessage,
     ErrorMessage,
     ExplainRequestMessage,
@@ -29,6 +30,7 @@ async def websocket_gateway(websocket: WebSocket) -> None:
     await websocket.accept()
     joined_room: str | None = None
     active_explanation: asyncio.Task[None] | None = None
+    active_request_id: str | None = None
     send_lock = asyncio.Lock()
 
     async def send_json(payload: dict[str, Any]) -> None:
@@ -121,7 +123,23 @@ async def websocket_gateway(websocket: WebSocket) -> None:
                     server_time=datetime.now(UTC).isoformat(),
                 )
                 await send_json(ack.model_dump())
+                active_request_id = message.request_id
                 active_explanation = asyncio.create_task(run_explanation(message))
+                continue
+
+            if isinstance(message, CancelMessage):
+                if active_explanation and message.target_request_id == active_request_id:
+                    active_explanation.cancel()
+                    active_explanation = None
+                    active_request_id = None
+                ack = AckMessage(
+                    type="ack",
+                    request_id=message.request_id,
+                    room_id=joined_room,
+                    kind="cancelled",
+                    server_time=datetime.now(UTC).isoformat(),
+                )
+                await send_json(ack.model_dump())
                 continue
 
             await send_error(
