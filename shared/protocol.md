@@ -61,6 +61,24 @@ inside JSON during the hackathon build.
 | `question` | string | yes | User's typed or default question. |
 | `language` | string | yes | Requested answer and speech language. |
 
+### `cancel`
+
+```json
+{"type":"cancel","request_id":"cancel_01JAZ8Q0X1A","room_id":"demo-room","target_request_id":"req_01JAZ8PN4ND"}
+```
+| Field | Type | Required | Meaning |
+|---|---|---:|---|
+| `type` | `"cancel"` | yes | Message discriminator. |
+| `request_id` | string | yes | Unique ID for this cancellation. |
+| `room_id` | string | yes | Current room code. |
+| `target_request_id` | string | yes | The `explain_request` to stop, if it is still running. |
+
+Cancelling stops in-progress text generation and speech synthesis for
+`target_request_id` and suppresses any further `text_delta`, `grounding`,
+`audio_delta`, or `done` messages for it. A `cancel` for a request that has
+already finished or was already superseded by a newer `explain_request` is a
+harmless no-op.
+
 ### `follow_up`
 
 ```json
@@ -87,7 +105,7 @@ inside JSON during the hackathon build.
 | `type` | `"ack"` | yes | Message discriminator. |
 | `request_id` | string | yes | Originating client request. |
 | `room_id` | string | yes | Room the server acknowledged. |
-| `kind` | `"joined"`, `"pong"`, or `"request_received"` | yes | What was acknowledged. |
+| `kind` | `"joined"`, `"pong"`, `"request_received"`, or `"cancelled"` | yes | What was acknowledged. |
 | `server_time` | string | yes | UTC ISO 8601 server time. |
 
 ### `text_delta`

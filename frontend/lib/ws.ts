@@ -97,6 +97,23 @@ export class GlanceSocket {
     return this.sendNow(message);
   }
 
+  /** Stops the in-flight explanation, if any, and marks it stale so any
+   * trailing messages for it are discarded. Returns false if nothing was
+   * running. */
+  cancelActive(): boolean {
+    if (!this.latestRequestId) return false;
+    const targetRequestId = this.latestRequestId;
+    const cancelId = requestId("cancel");
+    this.controlRequests.add(cancelId);
+    this.latestRequestId = cancelId;
+    return this.sendNow({
+      type: "cancel",
+      request_id: cancelId,
+      room_id: this.options.roomId,
+      target_request_id: targetRequestId,
+    });
+  }
+
   private sendNow(message: ClientMessage): boolean {
     if (this.socket?.readyState !== WebSocket.OPEN) return false;
     this.socket.send(JSON.stringify(message));

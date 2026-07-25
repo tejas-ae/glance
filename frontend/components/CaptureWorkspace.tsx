@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import AudioRing from "./AudioRing";
 import ScreenShare from "./ScreenShare";
 import TapOverlay from "./TapOverlay";
@@ -23,16 +30,20 @@ export type PreparedCapture = {
   audioPcm16: string;
 };
 type CaptureWorkspaceProps = {
-  explainStatus: "idle" | "loading" | "streaming" | "done" | "error";
+  explainStatus: "idle" | "loading" | "streaming" | "stopped" | "done" | "error";
   onAudioUnlock: () => void;
   onCapture: (capture: PreparedCapture, captureMs: number) => void;
+  onActiveChange?: (active: boolean) => void;
 };
 
-export default function CaptureWorkspace({
-  explainStatus,
-  onAudioUnlock,
-  onCapture,
-}: CaptureWorkspaceProps) {
+export type CaptureWorkspaceHandle = {
+  /** Re-captures a fresh frame/crop/audio snapshot for the last selected
+   * region and submits it, without requiring the user to drag again. */
+  recapture: () => void;
+};
+
+const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProps>(
+  function CaptureWorkspace({ explainStatus, onAudioUnlock, onCapture, onActiveChange }, ref) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const resources = useRef<CaptureResources>({
     display: null,
@@ -58,7 +69,10 @@ export default function CaptureWorkspace({
     resources.current = { display: null, microphone: null, context: null };
     if (videoRef.current) videoRef.current.srcObject = null;
     setActive(false);
-  }, []);
+    setBbox(null);
+    setImages(null);
+    onActiveChange?.(false);
+  }, [onActiveChange]);
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -86,6 +100,7 @@ export default function CaptureWorkspace({
       if (videoRef.current) videoRef.current.srcObject = display;
       display.getVideoTracks()[0].addEventListener("ended", stopCapture, { once: true });
       setActive(true);
+      onActiveChange?.(true);
 
       try {
         const microphone = await connectMicrophone(context, (chunk) => {
@@ -133,6 +148,12 @@ export default function CaptureWorkspace({
     const samples = ring.current.snapshot();
     downloadPcmAsWav(samples, `glance-last-${Math.ceil(audioSeconds)}s.wav`);
   }
+
+  useImperativeHandle(ref, () => ({
+    recapture: () => {
+      if (bbox) void selectRegion(bbox);
+    },
+  }));
 
   return (
     <>
@@ -193,7 +214,10 @@ export default function CaptureWorkspace({
       </div>
     </>
   );
-}
+  },
+);
+
+export default CaptureWorkspace;
 
 function message(error: unknown) {
   return error instanceof Error ? error.message : "Capture could not start.";

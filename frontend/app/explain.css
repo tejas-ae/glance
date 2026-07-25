@@ -2,8 +2,24 @@
 .explain-panel { min-height: 0; overflow: auto; }
 .explain-badge-loading,
 .explain-badge-streaming { background: #fff0eb; color: #bf4a38; }
+.explain-badge-stopped { background: #f1f0ec; color: #6c675c; }
 .explain-badge-done { background: #e9f7ef; color: #1d6b4c; }
 .explain-badge-error { background: #fff0ed; color: #9b3f35; }
+
+.explain-header-actions { display: flex; align-items: center; gap: 8px; }
+.stop-button {
+  border: 1px solid rgba(155,63,53,.28);
+  border-radius: 999px;
+  background: #fff0ed;
+  padding: 6px 11px;
+  color: #9b3f35;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.stop-button:hover { background: #ffe2dd; }
+.stopped-note { display: block; margin: -10px 0 20px; color: #8a8577; font-size: 11px; }
 
 .explain-loading { padding-top: 38px; }
 .explain-loading i {

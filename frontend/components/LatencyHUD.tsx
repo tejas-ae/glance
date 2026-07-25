@@ -33,6 +33,7 @@ function format(value: number | null) {
 function statusLabel(status: string) {
   if (status === "loading") return "Thinking";
   if (status === "streaming") return "Streaming";
+  if (status === "stopped") return "Stopped";
   if (status === "done") return "Complete";
   if (status === "error") return "Failed";
   return "Idle";

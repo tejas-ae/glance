@@ -1,10 +1,11 @@
 import type { GroundingMessage } from "@/lib/types";
 
 type ExplainPanelProps = {
-  status: "idle" | "loading" | "streaming" | "done" | "error";
+  status: "idle" | "loading" | "streaming" | "stopped" | "done" | "error";
   text: string;
   grounding: GroundingMessage | null;
   error: string | null;
+  onStop?: () => void;
 };
 
 export default function ExplainPanel({
@@ -12,14 +13,17 @@ export default function ExplainPanel({
   text,
   grounding,
   error,
+  onStop,
 }: ExplainPanelProps) {
   const label = {
     idle: "Waiting",
     loading: "Looking + listening",
     streaming: "Explaining",
+    stopped: "Stopped",
     done: "Grounded",
     error: "Error",
   }[status];
+  const canStop = status === "loading" || status === "streaming";
 
   return (
     <section className="explain-panel" aria-live="polite">
@@ -28,7 +32,14 @@ export default function ExplainPanel({
           <p className="eyebrow">In context</p>
           <h2>Explanation</h2>
         </div>
-        <span className={`empty-badge explain-badge-${status}`}>{label}</span>
+        <div className="explain-header-actions">
+          {canStop && onStop && (
+            <button type="button" className="stop-button" onClick={onStop}>
+              Stop
+            </button>
+          )}
+          <span className={`empty-badge explain-badge-${status}`}>{label}</span>
+        </div>
       </header>
 
       {status === "idle" && (
@@ -44,9 +55,10 @@ export default function ExplainPanel({
           <i /><i /><i /><p>Reading the region with recent conversation…</p>
         </div>
       )}
-      {(status === "streaming" || status === "done") && (
+      {(status === "streaming" || status === "stopped" || status === "done") && (
         <div className="explain-result">
           <p>{text}<span className={status === "streaming" ? "stream-caret" : ""} /></p>
+          {status === "stopped" && <small className="stopped-note">Stopped early.</small>}
           {grounding && (
             <blockquote>
               <span>Grounded in your conversation · {Math.abs(grounding.grounding_offset_seconds ?? 0)}s ago</span>

@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AskBar from "./AskBar";
 import AudioPlayer from "./AudioPlayer";
-import CaptureWorkspace, { type PreparedCapture } from "./CaptureWorkspace";
+import CaptureWorkspace, {
+  type CaptureWorkspaceHandle,
+  type PreparedCapture,
+} from "./CaptureWorkspace";
 import ConnectionStatus from "./ConnectionStatus";
 import ExplainPanel from "./ExplainPanel";
 import LatencyHUD from "./LatencyHUD";
@@ -14,7 +17,7 @@ import {
   GlanceSocket,
 } from "@/lib/ws";
 import { useAudioPlayback } from "@/lib/useAudioPlayback";
-type ExplainStatus = "idle" | "loading" | "streaming" | "done" | "error";
+type ExplainStatus = "idle" | "loading" | "streaming" | "stopped" | "done" | "error";
 type ExplainView = {
   status: ExplainStatus;
   text: string;
@@ -35,6 +38,7 @@ const initialView: ExplainView = {
 };
 export default function RoomClient({ roomId }: { roomId: string }) {
   const socketRef = useRef<GlanceSocket | null>(null);
+  const captureWorkspaceRef = useRef<CaptureWorkspaceHandle>(null);
   const requestStartedAt = useRef(0);
   const sawFirstText = useRef(false);
   const [connection, setConnection] = useState<ConnectionState>("connecting");
@@ -45,9 +49,13 @@ export default function RoomClient({ roomId }: { roomId: string }) {
     "Explain this in the context of our recent conversation.",
   );
   const [language, setLanguage] = useState("English");
-  const [lastCapture, setLastCapture] = useState<PreparedCapture | null>(null);
-  const [lastCaptureMs, setLastCaptureMs] = useState(0);
+  const [hasSelected, setHasSelected] = useState(false);
+  const [sharingActive, setSharingActive] = useState(false);
   const playback = useAudioPlayback();
+
+  const handleActiveChange = useCallback((isActive: boolean) => {
+    setSharingActive(isActive);
+  }, []);
 
   useEffect(() => {
     function receive(message: ServerMessage) {
@@ -135,14 +143,20 @@ export default function RoomClient({ roomId }: { roomId: string }) {
   }
 
   function capture(capturePayload: PreparedCapture, captureMs: number) {
-    setLastCapture(capturePayload);
-    setLastCaptureMs(captureMs);
+    setHasSelected(true);
     submit(capturePayload, captureMs);
   }
 
   function resubmit() {
-    playback.unlock();
-    if (lastCapture) submit(lastCapture, lastCaptureMs);
+    // Re-captures a fresh frame/crop/audio snapshot for the same region
+    // instead of resending the stale one from the last tap.
+    captureWorkspaceRef.current?.recapture();
+  }
+
+  function stop() {
+    socketRef.current?.cancelActive();
+    playback.reset(performance.now());
+    setView((current) => ({ ...current, status: "stopped" }));
   }
 
   return (
@@ -166,9 +180,11 @@ export default function RoomClient({ roomId }: { roomId: string }) {
 
       <section className="room-grid">
         <CaptureWorkspace
+          ref={captureWorkspaceRef}
           explainStatus={view.status}
           onAudioUnlock={playback.unlock}
           onCapture={capture}
+          onActiveChange={handleActiveChange}
         />
         <div className="pane explain-pane">
           <ExplainPanel
@@ -176,6 +192,7 @@ export default function RoomClient({ roomId }: { roomId: string }) {
             text={view.text}
             grounding={view.grounding}
             error={view.error}
+            onStop={stop}
           />
           <LatencyHUD
             status={view.status}
@@ -187,7 +204,7 @@ export default function RoomClient({ roomId }: { roomId: string }) {
           <AskBar
             question={question}
             language={language}
-            enabled={Boolean(lastCapture) && connection === "connected"}
+            enabled={hasSelected && sharingActive && connection === "connected"}
             onQuestionChange={setQuestion}
             onLanguageChange={setLanguage}
             onSubmit={resubmit}

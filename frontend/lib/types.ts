@@ -34,6 +34,13 @@ export type ExplainRequestMessage = {
   language: string;
 };
 
+export type CancelMessage = {
+  type: "cancel";
+  request_id: string;
+  room_id: string;
+  target_request_id: string;
+};
+
 export type FollowUpMessage = {
   type: "follow_up";
   request_id: string;
@@ -47,13 +54,14 @@ export type ClientMessage =
   | JoinMessage
   | PingMessage
   | ExplainRequestMessage
+  | CancelMessage
   | FollowUpMessage;
 
 export type AckMessage = {
   type: "ack";
   request_id: string;
   room_id: string;
-  kind: "joined" | "pong" | "request_received";
+  kind: "joined" | "pong" | "request_received" | "cancelled";
   server_time: string;
 };
 
