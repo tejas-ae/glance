@@ -38,6 +38,15 @@ export class PcmRingBuffer {
   }
 }
 
+/** Returns the last `seconds` of a sample buffer, tail-anchored (i.e. the
+ * most recent audio), for trimming an already-frozen snapshot down to a
+ * user-chosen lookback window without re-reading the live ring buffer. */
+export function trimToLastSeconds(samples: Int16Array, seconds: number): Int16Array {
+  const maxSamples = Math.round(PCM_SAMPLE_RATE_HZ * seconds);
+  if (samples.length <= maxSamples) return samples;
+  return samples.subarray(samples.length - maxSamples);
+}
+
 export function pcmToBase64(samples: Int16Array) {
   const bytes = new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength);
   let binary = "";

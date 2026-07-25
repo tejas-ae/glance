@@ -13,10 +13,23 @@ import ScreenShare from "./ScreenShare";
 import TapOverlay from "./TapOverlay";
 import { captureSelection, type CaptureImages } from "@/lib/capture";
 import { connectMicrophone } from "@/lib/microphone";
-import { downloadPcmAsWav, pcmToBase64, PcmRingBuffer } from "@/lib/pcm";
+import {
+  downloadPcmAsWav,
+  pcmToBase64,
+  PcmRingBuffer,
+  trimToLastSeconds,
+} from "@/lib/pcm";
 import type { BBox } from "@/lib/types";
-const configuredWindow = Number(process.env.NEXT_PUBLIC_AUDIO_WINDOW_S ?? 60);
-const AUDIO_WINDOW_SECONDS = Number.isFinite(configuredWindow) ? configuredWindow : 60;
+
+// The largest lookback window a user can pick at capture time. The ring
+// buffer is sized to this, not to any single duration option below.
+const configuredMaxWindow = Number(process.env.NEXT_PUBLIC_AUDIO_WINDOW_S ?? 120);
+const MAX_AUDIO_WINDOW_SECONDS = Number.isFinite(configuredMaxWindow) ? configuredMaxWindow : 120;
+const DEFAULT_DURATION_SECONDS = 60;
+const DURATION_OPTIONS_SECONDS = [30, 60, 120].filter(
+  (seconds) => seconds <= MAX_AUDIO_WINDOW_SECONDS,
+);
+
 type CaptureResources = {
   display: MediaStream | null;
   microphone: MediaStream | null;
@@ -40,6 +53,11 @@ export type CaptureWorkspaceHandle = {
   /** Re-captures a fresh frame/crop/audio snapshot for the last selected
    * region and submits it, without requiring the user to drag again. */
   recapture: () => void;
+  /** Re-sends the same frame/crop from the last tap with a different
+   * length of audio, trimmed from the snapshot frozen at tap time (not a
+   * fresh read of the live buffer, so the lookback window still ends at
+   * the original tap rather than sliding later). */
+  changeDuration: (seconds: number) => void;
 };
 
 const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProps>(
@@ -50,7 +68,8 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
     microphone: null,
     context: null,
   });
-  const ring = useRef(new PcmRingBuffer(AUDIO_WINDOW_SECONDS));
+  const ring = useRef(new PcmRingBuffer(MAX_AUDIO_WINDOW_SECONDS));
+  const frozenAudio = useRef<Int16Array | null>(null);
   const captureVersion = useRef(0);
   const [active, setActive] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -59,6 +78,7 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [images, setImages] = useState<CaptureImages | null>(null);
   const [showBbox, setShowBbox] = useState(true);
+  const [durationSeconds, setDurationSeconds] = useState(DEFAULT_DURATION_SECONDS);
   const [error, setError] = useState<string | null>(null);
 
   const stopCapture = useCallback(() => {
@@ -71,6 +91,7 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
     setActive(false);
     setBbox(null);
     setImages(null);
+    frozenAudio.current = null;
     onActiveChange?.(false);
   }, [onActiveChange]);
 
@@ -118,10 +139,35 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
     }
   }
 
+  function sendCapture(
+    selection: BBox,
+    currentImages: CaptureImages,
+    seconds: number,
+    captureMs: number,
+  ) {
+    const trimmed = frozenAudio.current
+      ? trimToLastSeconds(frozenAudio.current, seconds)
+      : new Int16Array(0);
+    onCapture(
+      {
+        bbox: selection,
+        annotatedFrame: currentImages.annotatedFrame,
+        crop: currentImages.crop,
+        thumbnail: currentImages.thumbnail,
+        audioPcm16: pcmToBase64(trimmed),
+      },
+      captureMs,
+    );
+  }
+
   async function selectRegion(selection: BBox) {
     onAudioUnlock();
     const version = ++captureVersion.current;
     const startedAt = performance.now();
+    // Freeze the audio snapshot immediately, before the (async) frame
+    // capture below, so the lookback window anchors to this exact moment
+    // regardless of how long image capture or a later duration change takes.
+    frozenAudio.current = ring.current.snapshot();
     setBbox(selection);
     setError(null);
     try {
@@ -129,18 +175,17 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
       const nextImages = await captureSelection(videoRef.current, selection);
       if (version !== captureVersion.current) return;
       setImages(nextImages);
-      onCapture(
-        {
-          bbox: selection,
-          annotatedFrame: nextImages.annotatedFrame,
-          crop: nextImages.crop,
-          thumbnail: nextImages.thumbnail,
-          audioPcm16: pcmToBase64(ring.current.snapshot()),
-        },
-        performance.now() - startedAt,
-      );
+      sendCapture(selection, nextImages, durationSeconds, performance.now() - startedAt);
     } catch (captureError) {
       if (version === captureVersion.current) setError(message(captureError));
+    }
+  }
+
+  function changeDuration(seconds: number) {
+    setDurationSeconds(seconds);
+    if (bbox && images && frozenAudio.current) {
+      const startedAt = performance.now();
+      sendCapture(bbox, images, seconds, performance.now() - startedAt);
     }
   }
 
@@ -153,6 +198,7 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
     recapture: () => {
       if (bbox) void selectRegion(bbox);
     },
+    changeDuration,
   }));
 
   return (
@@ -189,9 +235,24 @@ const CaptureWorkspace = forwardRef<CaptureWorkspaceHandle, CaptureWorkspaceProp
         />
         <AudioRing
           seconds={audioSeconds}
-          windowSeconds={AUDIO_WINDOW_SECONDS}
+          windowSeconds={MAX_AUDIO_WINDOW_SECONDS}
           active={active && Boolean(resources.current.microphone)}
         />
+        <div className="duration-picker">
+          <span>Explain using last</span>
+          <div className="duration-options">
+            {DURATION_OPTIONS_SECONDS.map((seconds) => (
+              <button
+                key={seconds}
+                type="button"
+                className={seconds === durationSeconds ? "is-selected" : ""}
+                onClick={() => changeDuration(seconds)}
+              >
+                {formatDuration(seconds)}
+              </button>
+            ))}
+          </div>
+        </div>
         {error && <p className="capture-error" role="alert">{error}</p>}
       </div>
 
@@ -221,4 +282,8 @@ export default CaptureWorkspace;
 
 function message(error: unknown) {
   return error instanceof Error ? error.message : "Capture could not start.";
+}
+
+function formatDuration(seconds: number) {
+  return seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)}min`;
 }

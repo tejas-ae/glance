@@ -14,13 +14,19 @@ inside JSON during the hackathon build.
 - Every `error` contains `code`, `message`, and `retryable: bool`.
 - Audio is raw signed 16-bit little-endian PCM, mono, at 16 kHz unless a
   message explicitly says otherwise.
+- The client keeps a rolling audio buffer sized to the largest lookback
+  window it offers (currently 120s), frozen into a snapshot at the moment
+  of each tap. The user picks how much of that snapshot to actually send
+  (e.g. 30s/60s/120s) before or after the request goes out; the server
+  infers the actual duration from the payload length rather than trusting
+  a separate field.
 - Times are UTC ISO 8601 strings; durations and offsets are milliseconds or
   seconds as named.
 - Room IDs are 1–64 lowercase letters, digits, or hyphens. Request and client
   IDs are 1–128 characters.
 - Questions are 1–500 characters and language names are 1–40 characters.
-- Each full/crop image is limited to 4 MB of base64 text, thumbnails to 300 KB,
-  and audio to 3 MB.
+- Each full/crop image is limited to 4 MB of base64 text, thumbnails to
+  300 KB, and audio to 5.5 MB (enough for the 120s max lookback window).
 
 ## Client to server
 
@@ -61,7 +67,7 @@ inside JSON during the hackathon build.
 | `annotated_frame_jpeg_base64` | string | yes | Full frame, at most 1280 px on its longest edge, with a red selection rectangle. |
 | `crop_jpeg_base64` | string | yes | Tight selected-region crop with about 8% padding. |
 | `thumbnail_jpeg_base64` | string | yes | Small recap-only JPEG; it is stored but never sent to Gemini. |
-| `audio_pcm16_base64` | string | yes | Up to the latest 60 seconds of raw mono PCM. |
+| `audio_pcm16_base64` | string | yes | Raw mono PCM for the client's chosen lookback window (30s/60s/120s), ending at the moment of selection. Its actual duration is derived server-side from its length, not trusted from any separate field. |
 | `audio_sample_rate_hz` | integer | yes | PCM sample rate; currently `16000`. |
 | `question` | string | yes | User's typed or default question. |
 | `language` | string | yes | Requested answer and speech language. |

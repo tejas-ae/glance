@@ -1,8 +1,8 @@
 # Glance
 
 **Point at any part of your shared screen and get an explanation grounded in
-the last 60 seconds of conversation.** Existing meeting AI listens; Glance
-looks at what you are pointing at, and listens.
+as much of the recent conversation as you choose.** Existing meeting AI
+listens; Glance looks at what you are pointing at, and listens.
 
 ![demo](demo/demo.gif)
 
@@ -10,7 +10,7 @@ looks at what you are pointing at, and listens.
 
 ```mermaid
 flowchart LR
-    A["Browser capture<br/>screen + 60s PCM"] --> B["Drag-selected region<br/>annotated frame + crop"]
+    A["Browser capture<br/>screen + up to 120s PCM"] --> B["Drag-selected region<br/>annotated frame + crop"]
     B --> C["WebSocket"]
     C --> D["FastAPI on Cloud Run<br/>single demo instance"]
     D --> E["Gemini<br/>frame + crop + raw audio"]
@@ -59,10 +59,9 @@ paths ending in `z`, so its edge may intercept `/healthz` before FastAPI.
 | `MODEL_EXPLAIN_FALLBACK` | `gemini-3.5-flash-lite` | Explanation fallback model. |
 | `MODEL_TTS` | `gemini-3.1-flash-tts-preview` | Speech synthesis model. |
 | `MODEL_LIVE` | `gemini-3.1-flash-live-preview` | Optional continuous Live API model. |
-| `AUDIO_WINDOW_S` | `60` | Rolling raw PCM history in seconds. |
 | `FIRESTORE_COLLECTION` | `rooms` | Root collection for recap artifacts. |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed browser origins. |
-| `NEXT_PUBLIC_AUDIO_WINDOW_S` | `60` | Browser ring-buffer duration. |
+| `NEXT_PUBLIC_AUDIO_WINDOW_S` | `120` | Largest audio lookback window offered at capture time; the ring buffer is sized to it. Users pick 30s/60s/120s per capture. |
 | `NEXT_PUBLIC_BACKEND_HTTP_URL` | `http://localhost:8000` | Browser-visible API base URL. |
 | `NEXT_PUBLIC_BACKEND_WS_URL` | `ws://localhost:8000/ws` | Browser-visible WebSocket URL. |
 | `GOOGLE_CLOUD_REGION` | `us-central1` | Cloud Run deployment region. |
@@ -92,8 +91,11 @@ changes require a one-file fix.
 
 ## Why not Speech-to-Text?
 
-Glance keeps a fixed 60-second ring buffer of raw 16 kHz mono PCM in the
-browser. On a tap, that audio goes directly to Gemini beside the two images.
+Glance keeps a rolling ring buffer of raw 16 kHz mono PCM in the browser,
+sized to the largest lookback window it offers (120s by default). On a tap,
+that buffer is frozen and the user picks how much of it (30s/60s/120s) to
+send to Gemini beside the two images — chosen after the fact, since the
+moment worth explaining is often a little behind whenever you notice it.
 Gemini can interpret the audio natively, so a transcript service would add
 latency, cost, failure modes, and a lossy intermediate representation without
 improving the core demo.

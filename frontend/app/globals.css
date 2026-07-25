@@ -94,6 +94,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .ask-bar input { flex: 1; }
 .ask-bar select { width: 112px; }
 .ask-bar button { border: 0; border-radius: 11px; background: #215849; color: white; padding: 11px 14px; font-weight: 800; }
-.audio-player { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; margin-top: 9px; border-radius: 11px; background: #e5ebe7; color: #51615b; padding: 11px 14px; font-weight: 800; }
+.audio-player { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; margin-top: 9px; border: 0; border-radius: 11px; background: #e5ebe7; color: #51615b; padding: 11px 14px; font-weight: 800; }
 .audio-playing { background: #dff5e8; color: #1d6b4c; }
+.audio-paused { background: #fff3e0; color: #9a6a1d; }
 .audio-unavailable { background: #fff0ed; color: #9b3f35; }

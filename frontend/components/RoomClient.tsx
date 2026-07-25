@@ -155,8 +155,10 @@ export default function RoomClient({ roomId }: { roomId: string }) {
   }
 
   function stop() {
+    // Only cancels further generation. Audio already synthesized keeps
+    // playing under its own persistent Play/Pause control below, rather
+    // than being forced to stop here too.
     socketRef.current?.cancelActive();
-    playback.reset(performance.now());
     setView((current) => ({ ...current, status: "stopped" }));
   }
 
@@ -210,7 +212,11 @@ export default function RoomClient({ roomId }: { roomId: string }) {
             onLanguageChange={setLanguage}
             onSubmit={resubmit}
           />
-          <AudioPlayer status={playback.status} />
+          <AudioPlayer
+            status={playback.status}
+            onPause={playback.pause}
+            onResume={playback.resume}
+          />
         </div>
       </section>
     </main>

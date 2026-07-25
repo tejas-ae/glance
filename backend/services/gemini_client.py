@@ -9,9 +9,11 @@ from google import genai
 from google.genai import types
 
 from services.audio_format import pcm_to_wav
-from services.prompts import EXPLAIN_SYSTEM_PROMPT
+from services.prompts import EXPLAIN_SYSTEM_PROMPT, describe_audio
 
 _client: genai.Client | None = None
+PCM_SAMPLE_RATE_HZ = 16_000
+PCM_BYTES_PER_SAMPLE = 2
 LANGUAGE_CODES = {
     "English": "en-US",
     "Spanish": "es-US",
@@ -61,8 +63,12 @@ async def explain_stream(
         parts.append(types.Part.from_text(text="No meeting audio was provided."))
     parts.append(types.Part.from_text(text=f"User question: {question}"))
     contents = types.Content(role="user", parts=parts)
+    audio_seconds = len(audio_pcm16) / PCM_BYTES_PER_SAMPLE / PCM_SAMPLE_RATE_HZ
     config = types.GenerateContentConfig(
-        system_instruction=EXPLAIN_SYSTEM_PROMPT.format(language=language),
+        system_instruction=EXPLAIN_SYSTEM_PROMPT.format(
+            language=language,
+            audio_description=describe_audio(audio_seconds),
+        ),
         max_output_tokens=1_024,
         thinking_config=types.ThinkingConfig(
             thinking_level=types.ThinkingLevel.MINIMAL,

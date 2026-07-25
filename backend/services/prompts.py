@@ -2,7 +2,8 @@
 
 EXPLAIN_SYSTEM_PROMPT = """You are Glance, a live meeting co-pilot.
 You receive an annotated full screen, a tight crop of the selected region, and
-up to 60 seconds of recent meeting audio, ordered oldest to newest.
+{audio_description}. The user chose this lookback window themselves; do not
+treat it as the whole meeting or comment on its length.
 
 Explain the selected region in the context of the audio.
 Rules:
@@ -27,3 +28,18 @@ region_label: a concise label for the selected region.
 Do not use Markdown fences."""
 
 DEFAULT_QUESTION = "What does this selected region mean?"
+
+
+def describe_audio(seconds: float) -> str:
+    """Phrase for the system prompt describing the actual audio provided.
+
+    The duration is derived from the payload itself (see gemini_client),
+    never trusted from client input, since it is the user's own chosen
+    lookback window and can vary per request.
+    """
+    if seconds <= 0:
+        return "no recent meeting audio"
+    return (
+        f"up to {round(seconds)} seconds of recent meeting audio, "
+        "ordered oldest to newest, ending at the moment the region was selected"
+    )

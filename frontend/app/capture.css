@@ -69,6 +69,33 @@
 .audio-ring small i.audio-live { background: #27a66d; box-shadow: 0 0 0 3px rgba(39,166,109,.13); }
 .audio-ring-fill { transition: width .2s linear; }
 
+.duration-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  border-radius: 13px;
+  background: #f3f6f2;
+  padding: 12px 14px;
+}
+.duration-picker > span { color: #64736d; font-size: 11px; font-weight: 700; }
+.duration-options { display: flex; gap: 6px; }
+.duration-options button {
+  border: 1px solid #cbd6d0;
+  border-radius: 999px;
+  background: white;
+  padding: 6px 11px;
+  color: #52615d;
+  font-size: 11px;
+  font-weight: 800;
+}
+.duration-options button.is-selected {
+  border-color: #215849;
+  background: #215849;
+  color: white;
+}
+
 .capture-error {
   margin: 10px 2px 0;
   border-radius: 9px;

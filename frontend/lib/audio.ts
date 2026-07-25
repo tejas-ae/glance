@@ -1,8 +1,10 @@
 import type { AudioDeltaMessage } from "@/lib/types";
 
+export type QueueStatus = "idle" | "playing" | "paused";
+
 type QueueCallbacks = {
   onFirstPlayback: () => void;
-  onPlayingChange: (playing: boolean) => void;
+  onStatusChange: (status: QueueStatus) => void;
 };
 
 export class PcmAudioQueue {
@@ -13,12 +15,31 @@ export class PcmAudioQueue {
   private nextStartTime = 0;
   private generation = 0;
   private started = false;
+  private hasContent = false;
+  private paused = false;
 
   constructor(private readonly callbacks: QueueCallbacks) {}
 
   unlock(): void {
     if (!this.context) this.context = new AudioContext();
     void this.context.resume();
+  }
+
+  /** Freezes playback in place (Web Audio's own clock stops advancing, so
+   * every scheduled source stays exactly where it was). */
+  pause(): void {
+    if (!this.context || !this.hasContent || this.paused) return;
+    this.paused = true;
+    void this.context.suspend();
+    this.callbacks.onStatusChange("paused");
+  }
+
+  /** Continues playback from exactly where `pause()` left it. */
+  resumePlayback(): void {
+    if (!this.context || !this.hasContent || !this.paused) return;
+    this.paused = false;
+    void this.context.resume();
+    this.callbacks.onStatusChange(this.sources.size > 0 ? "playing" : "idle");
   }
 
   reset(): void {
@@ -35,7 +56,10 @@ export class PcmAudioQueue {
     this.nextSequence = 0;
     this.nextStartTime = this.context?.currentTime ?? 0;
     this.started = false;
-    this.callbacks.onPlayingChange(false);
+    this.hasContent = false;
+    this.paused = false;
+    void this.context?.resume();
+    this.callbacks.onStatusChange("idle");
   }
 
   enqueue(message: AudioDeltaMessage): void {
@@ -81,23 +105,24 @@ export class PcmAudioQueue {
     const generation = this.generation;
     source.onended = () => {
       this.sources.delete(source);
-      if (generation === this.generation && this.sources.size === 0) {
-        this.callbacks.onPlayingChange(false);
+      if (generation === this.generation && this.sources.size === 0 && !this.paused) {
+        this.callbacks.onStatusChange("idle");
       }
     };
     this.sources.add(source);
     source.start(startAt);
+    this.hasContent = true;
     if (!this.started) {
       this.started = true;
       this.callbacks.onFirstPlayback();
     }
-    this.callbacks.onPlayingChange(true);
+    if (!this.paused) this.callbacks.onStatusChange("playing");
   }
 }
 
-function decodePcm(base64: string): Float32Array {
+function decodePcm(base64: string): Float32Array<ArrayBuffer> {
   const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
   }

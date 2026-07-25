@@ -46,7 +46,9 @@ class ExplainRequestMessage(BaseModel):
     annotated_frame_jpeg_base64: Annotated[str, Field(max_length=4_000_000)]
     crop_jpeg_base64: Annotated[str, Field(max_length=4_000_000)]
     thumbnail_jpeg_base64: Annotated[str, Field(max_length=300_000)]
-    audio_pcm16_base64: Annotated[str, Field(max_length=3_000_000)]
+    # Sized for the largest lookback window offered (120s @ 16kHz mono
+    # 16-bit -> ~5.12M base64 chars), not the old fixed 60s default.
+    audio_pcm16_base64: Annotated[str, Field(max_length=5_500_000)]
     audio_sample_rate_hz: Literal[16000]
     question: Annotated[str, Field(min_length=1, max_length=500)]
     language: Annotated[str, Field(min_length=1, max_length=40)]
